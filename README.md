@@ -1,6 +1,6 @@
 # postgis
 
-PoC project to test polygon area
+PoC project to test polygon area with a small Node.js server.
 
 ## Running with Docker
 
@@ -13,25 +13,64 @@ docker-compose up --build
 ```
 
 The server will be available on [http://localhost:3000](http://localhost:3000) and the database on port `5432`.
+pgAdmin is exposed on [http://localhost:5050](http://localhost:5050) with default credentials `admin@example.com` / `admin`.
 
 ### Creating the `polygon_areas` table
 
-Run the following command to open a `psql` shell inside the database container:
+A SQL script is provided in `sql/create_polygon_areas.sql`:
 
 ```bash
-docker-compose exec db psql -U postgres
+docker-compose exec db psql -U postgres -f /app/sql/create_polygon_areas.sql
 ```
 
-Then create the table:
+To insert a circular area with a 1 km radius around a custom point:
 
-```sql
-CREATE TABLE polygon_areas (
-  id SERIAL PRIMARY KEY,
-  geom GEOMETRY(POLYGON, 4326)
-);
+```bash
+docker-compose exec db psql -U postgres \
+  -v lat=40.0 -v lon=-74.0 -v name='Home area' \
+  -f /app/sql/create_circle_polygon.sql
 ```
 
-Exit `psql` with `\q`.
+### API endpoints
+
+`POST /polygons` – create a new polygon area
+
+Coordinates must be provided as `[lon, lat]` pairs. Example body:
+
+```json
+{
+  "name": "Area 1",
+  "coordinates": [[10.0, 10.0], [10.0, 20.0], [20.0, 20.0], [10.0, 10.0]]
+}
+```
+
+Example cURL:
+
+```bash
+curl -X POST http://localhost:3000/polygons \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Area 1","coordinates":[[10,10],[10,20],[20,20],[10,10]]}'
+```
+
+`POST /check-location` – check whether a point is in any stored polygon
+
+Example body:
+
+```json
+{ "lat": 10.0, "lon": 20.0 }
+```
+
+Example cURL:
+
+```bash
+curl -X POST http://localhost:3000/check-location \
+  -H "Content-Type: application/json" \
+  -d '{"lat":10.0,"lon":20.0}'
+```
+
+The endpoint returns `{ "inside": true, "polygonId": 1 }` when the point is inside a stored polygon or `{ "inside": false }` otherwise.
+
+Swagger UI is available at `http://localhost:3000/api-docs` when the server is running.
 
 ### Environment variables
 
@@ -39,3 +78,12 @@ Exit `psql` with `\q`.
 - `DATABASE_URL` – connection string used by the server to reach the database.
 
 Both are already defined in the compose file for local development.
+
+### Tests
+
+Run the unit tests with:
+
+```bash
+npm test
+```
+
