@@ -1,6 +1,6 @@
 # postgis
 
-PoC project to test polygon area
+PoC project to test polygon area with a small Node.js server.
 
 ## Running with Docker
 
@@ -16,22 +16,23 @@ The server will be available on [http://localhost:3000](http://localhost:3000) a
 
 ### Creating the `polygon_areas` table
 
-Run the following command to open a `psql` shell inside the database container:
+A SQL script is provided in `sql/create_polygon_areas.sql`:
 
 ```bash
-docker-compose exec db psql -U postgres
+docker-compose exec db psql -U postgres -f /app/sql/create_polygon_areas.sql
 ```
 
-Then create the table:
+### API endpoint
 
-```sql
-CREATE TABLE polygon_areas (
-  id SERIAL PRIMARY KEY,
-  geom GEOMETRY(POLYGON, 4326)
-);
+`POST /check-location`
+
+Body:
+
+```json
+{ "lat": 10.0, "lon": 20.0 }
 ```
 
-Exit `psql` with `\q`.
+The endpoint returns `{ "inside": true, "polygonId": 1 }` when the point is inside a stored polygon or `{ "inside": false }` otherwise.
 
 ### Environment variables
 
@@ -39,3 +40,12 @@ Exit `psql` with `\q`.
 - `DATABASE_URL` – connection string used by the server to reach the database.
 
 Both are already defined in the compose file for local development.
+
+### Tests
+
+Run the unit tests with:
+
+```bash
+npm test
+```
+

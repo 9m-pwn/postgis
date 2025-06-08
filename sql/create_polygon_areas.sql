@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS polygon_areas (
+  id SERIAL PRIMARY KEY,
+  geom GEOMETRY(POLYGON, 4326)
+);
