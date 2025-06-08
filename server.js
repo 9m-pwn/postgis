@@ -46,10 +46,12 @@ function createApp(pool, connectionString) {
   async function runMigrations() {
     const sql = fs.readFileSync(require('path').join(__dirname, 'sql', 'create_polygon_areas.sql'), 'utf8');
     try {
+      await pool.query('CREATE EXTENSION IF NOT EXISTS postgis');
       await pool.query(sql);
       console.log('Database migrations applied');
     } catch (err) {
       console.error('Migration failed:', err);
+      throw err;
     }
   }
 
