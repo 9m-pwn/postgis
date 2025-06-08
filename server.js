@@ -45,15 +45,18 @@ function createApp(pool, connectionString) {
 
   async function runMigrations() {
     const path = require('path');
-    const createSql = fs.readFileSync(path.join(__dirname, 'sql', 'create_polygon_areas.sql'), 'utf8');
-    const insertSql = `INSERT INTO polygon_areas(name, geom)
-      VALUES (
-        $1,
-        ST_Buffer(
-          ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography,
-          1000
-        )::geometry
-      )`;
+    const createSql = fs.readFileSync(
+      path.join(__dirname, 'sql', 'create_polygon_areas.sql'),
+      'utf8'
+    );
+    const circleTemplate = fs.readFileSync(
+      path.join(__dirname, 'sql', 'create_circle_polygon.sql'),
+      'utf8'
+    );
+    const insertSql = circleTemplate
+      .replace(/:'name'/g, '$1')
+      .replace(/:'lon'/g, '$2')
+      .replace(/:'lat'/g, '$3');
 
     const defaultLat = parseFloat(process.env.CIRCLE_LAT || '40.0');
     const defaultLon = parseFloat(process.env.CIRCLE_LON || '-74.0');
