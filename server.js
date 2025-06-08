@@ -1,10 +1,12 @@
+require('dotenv').config();
 const express = require('express');
 const { Pool } = require('pg');
+const fs = require('fs');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
 function createApp(pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/postgres'
+  connectionString: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/gis_database'
 })) {
   const app = express();
   app.use(express.json());
@@ -21,6 +23,16 @@ function createApp(pool = new Pool({
   });
 
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+  async function runMigrations() {
+    const sql = fs.readFileSync(require('path').join(__dirname, 'sql', 'create_polygon_areas.sql'), 'utf8');
+    try {
+      await pool.query(sql);
+      console.log('Database migrations applied');
+    } catch (err) {
+      console.error('Migration failed:', err);
+    }
+  }
 
   async function checkPoint(lat, lon) {
     const query = `SELECT id FROM polygon_areas
@@ -121,15 +133,18 @@ function createApp(pool = new Pool({
   });
 
   app.checkPoint = checkPoint;
+  app.runMigrations = runMigrations;
   return app;
 }
 
 if (require.main === module) {
   const app = createApp();
   const port = process.env.PORT || 3000;
-  app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-    console.log(`API docs available at http://localhost:${port}/api-docs`);
+  app.runMigrations().then(() => {
+    app.listen(port, () => {
+      console.log(`Server listening on port ${port}`);
+      console.log(`API docs available at http://localhost:${port}/api-docs`);
+    });
   });
 }
 
