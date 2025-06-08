@@ -72,7 +72,7 @@ The endpoint returns `{ "inside": true, "polygonId": 1 }` when the point is insi
 
 Swagger UI is available at `http://localhost:3000/api-docs` when the server is running.
 
-The server automatically ensures the `polygon_areas` table exists when it starts.
+The server automatically ensures the database and `polygon_areas` table exist when it starts.
 
 ### Environment variables
 

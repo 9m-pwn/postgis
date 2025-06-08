@@ -5,9 +5,9 @@ const fs = require('fs');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
-function createApp(pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/gis_database'
-})) {
+function createApp(pool, connectionString) {
+  connectionString = connectionString || process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/gis_database';
+  pool = pool || new Pool({ connectionString });
   const app = express();
   app.use(express.json());
 
@@ -23,6 +23,25 @@ function createApp(pool = new Pool({
   });
 
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+  async function ensureDatabaseExists(connectionString) {
+    const url = new URL(connectionString);
+    const dbName = url.pathname.slice(1);
+    const adminUrl = `${url.protocol}//${url.username}:${url.password}@${url.hostname}:${url.port}/postgres`;
+    const adminPool = new Pool({ connectionString: adminUrl });
+    try {
+      const result = await adminPool.query('SELECT 1 FROM pg_database WHERE datname = $1', [dbName]);
+      if (result.rowCount === 0) {
+        await adminPool.query(`CREATE DATABASE "${dbName}"`);
+        console.log(`Database ${dbName} created`);
+      }
+    } catch (err) {
+      console.error('Database check failed:', err);
+      throw err;
+    } finally {
+      await adminPool.end();
+    }
+  }
 
   async function runMigrations() {
     const sql = fs.readFileSync(require('path').join(__dirname, 'sql', 'create_polygon_areas.sql'), 'utf8');
@@ -134,18 +153,27 @@ function createApp(pool = new Pool({
 
   app.checkPoint = checkPoint;
   app.runMigrations = runMigrations;
+  app.ensureDatabaseExists = (connString) => ensureDatabaseExists(connString || connectionString);
   return app;
 }
 
 if (require.main === module) {
-  const app = createApp();
+  const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@localhost:5432/gis_database';
+  const pool = new Pool({ connectionString });
+  const app = createApp(pool, connectionString);
   const port = process.env.PORT || 3000;
-  app.runMigrations().then(() => {
-    app.listen(port, () => {
-      console.log(`Server listening on port ${port}`);
-      console.log(`API docs available at http://localhost:${port}/api-docs`);
+  app.ensureDatabaseExists()
+    .then(() => app.runMigrations())
+    .then(() => {
+      app.listen(port, () => {
+        console.log(`Server listening on port ${port}`);
+        console.log(`API docs available at http://localhost:${port}/api-docs`);
+      });
+    })
+    .catch(err => {
+      console.error('Failed to start server:', err);
+      process.exit(1);
     });
-  });
 }
 
 module.exports = { createApp };
