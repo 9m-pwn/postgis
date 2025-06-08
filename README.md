@@ -6,7 +6,7 @@ PoC project to test polygon area with a small Node.js server.
 
 This project uses `docker-compose` to run a PostGIS database and the Node.js server.
 
-Build and start the containers:
+Copy `.env.example` to `.env` and adjust credentials if needed, then build and start the containers:
 
 ```bash
 docker-compose up --build
@@ -72,12 +72,17 @@ The endpoint returns `{ "inside": true, "polygonId": 1 }` when the point is insi
 
 Swagger UI is available at `http://localhost:3000/api-docs` when the server is running.
 
+The server automatically ensures the `polygon_areas` table exists when it starts.
+
 ### Environment variables
 
-- `POSTGRES_PASSWORD` – password for the `postgres` user (set in `docker-compose.yml`).
-- `DATABASE_URL` – connection string used by the server to reach the database.
+Configuration is read from the `.env` file. Important variables include:
 
-Both are already defined in the compose file for local development.
+- `POSTGRES_PASSWORD` – password for the `postgres` user
+- `POSTGRES_DB` – name of the database (defaults to `gis_database`)
+- `DATABASE_URL` – connection string used by the server
+
+All variables have defaults in `.env.example` for local development.
 
 ### Tests
 
@@ -86,4 +91,8 @@ Run the unit tests with:
 ```bash
 npm test
 ```
+
+### License
+
+This project is released under the [MIT License](LICENSE).
 
