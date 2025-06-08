@@ -134,6 +134,8 @@ function createApp(pool, connectionString) {
     }
     const coordsText = ring.map(c => `${c[0]} ${c[1]}`).join(', ');
     const polygonWKT = `POLYGON((${coordsText}))`;
+
+    console.log(`Inserting polygon: ${polygonWKT}`);
     try {
       const result = await pool.query(
         'INSERT INTO polygon_areas (name, geom) VALUES ($1, ST_GeomFromText($2, 4326)) RETURNING id',
@@ -179,6 +181,55 @@ function createApp(pool, connectionString) {
       res.status(500).json({ error: 'server error' });
     }
   });
+
+  // API for adding a new polygon area by add lat, lon as center of circle
+  /**
+  * @openapi
+  * /circle:
+  *   post:
+  *     summary: Add a new circle polygon area
+  *     requestBody:
+  *       required: true
+  *       content:
+  *         application/json:
+  *           schema:
+  *             type: object
+  *             properties:
+  *               name:
+  *                 type: string
+  *               lat:
+  *                 type: number
+  *               lon:
+  *                 type: number
+  *     responses:
+  *      201:
+  *        description: Circle polygon created
+  */
+  app.post('/circle', async (req, res) => {
+    const { name, lat, lon } = req.body;
+    if (typeof name !== 'string' || typeof lat !== 'number' || typeof lon !== 'number') {
+      return res.status(400).json({ error: 'name, lat and lon required' });
+    }
+    try {
+      const result = await pool.query(
+        `INSERT INTO polygon_areas (name, geom)
+         VALUES ($1, ST_Buffer(ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, 1000)::geometry)
+         RETURNING id`,
+        [name, lon, lat]
+      );
+
+  //     ST_Buffer(
+  //   ST_SetSRID(ST_MakePoint(:'lon', :'lat'), 4326)::geography,
+  //   1000
+  // )::geometry
+      
+      res.status(201).json({ id: result.rows[0].id });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'server error' });
+    }
+  });
+
 
   app.checkPoint = checkPoint;
   app.runMigrations = runMigrations;
