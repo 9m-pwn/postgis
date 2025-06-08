@@ -92,10 +92,17 @@ All variables have defaults in `.env.example` for local development.
 
 ### Tests
 
-Run the unit tests with:
+Install dependencies and run the unit tests with:
 
 ```bash
+npm install
 npm test
+```
+
+If using Docker, the tests can be executed inside the server container:
+
+```bash
+docker-compose run --rm server npm test
 ```
 
 ### License
