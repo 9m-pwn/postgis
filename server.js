@@ -24,22 +24,31 @@ function createApp(pool, connectionString) {
 
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-  async function ensureDatabaseExists(connectionString) {
+  async function ensureDatabaseExists(connectionString, retries = 5, delayMs = 2000) {
     const url = new URL(connectionString);
     const dbName = url.pathname.slice(1);
     const adminUrl = `${url.protocol}//${url.username}:${url.password}@${url.hostname}:${url.port}/postgres`;
-    const adminPool = new Pool({ connectionString: adminUrl });
-    try {
-      const result = await adminPool.query('SELECT 1 FROM pg_database WHERE datname = $1', [dbName]);
-      if (result.rowCount === 0) {
-        await adminPool.query(`CREATE DATABASE "${dbName}"`);
-        console.log(`Database ${dbName} created`);
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      const adminPool = new Pool({ connectionString: adminUrl });
+      try {
+        const result = await adminPool.query('SELECT 1 FROM pg_database WHERE datname = $1', [dbName]);
+        if (result.rowCount === 0) {
+          await adminPool.query(`CREATE DATABASE "${dbName}"`);
+          console.log(`Database ${dbName} created`);
+        }
+        await adminPool.end();
+        return;
+      } catch (err) {
+        await adminPool.end();
+        if (err.code === 'ECONNREFUSED' && attempt < retries) {
+          console.warn(`Database connection refused, retrying (${attempt}/${retries})...`);
+          await new Promise(res => setTimeout(res, delayMs));
+          continue;
+        }
+        console.error('Database check failed:', err);
+        throw err;
       }
-    } catch (err) {
-      console.error('Database check failed:', err);
-      throw err;
-    } finally {
-      await adminPool.end();
     }
   }
 
