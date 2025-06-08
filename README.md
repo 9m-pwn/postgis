@@ -31,6 +31,9 @@ docker-compose exec db psql -U postgres \
   -f /app/sql/create_circle_polygon.sql
 ```
 
+The server automatically adds a circle polygon during startup using the
+`CIRCLE_LAT`, `CIRCLE_LON`, and `CIRCLE_NAME` environment variables.
+
 ### API endpoints
 
 `POST /polygons` – create a new polygon area
@@ -81,6 +84,9 @@ Configuration is read from the `.env` file. Important variables include:
 - `POSTGRES_PASSWORD` – password for the `postgres` user
 - `POSTGRES_DB` – name of the database (defaults to `gis_database`)
 - `DATABASE_URL` – connection string used by the server
+- `CIRCLE_LAT` – latitude of the default circle polygon (default `40.0`)
+- `CIRCLE_LON` – longitude of the default circle polygon (default `-74.0`)
+- `CIRCLE_NAME` – name for the inserted circle polygon (default `Home area`)
 
 All variables have defaults in `.env.example` for local development.
 

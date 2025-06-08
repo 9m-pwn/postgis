@@ -61,3 +61,14 @@ describe('POST /polygons', () => {
     expect(res.status).toBe(400);
   });
 });
+
+describe('runMigrations', () => {
+  test('creates table and inserts default circle', async () => {
+    const pool = { query: jest.fn().mockResolvedValue({ rows: [] }) };
+    const app = createApp(pool);
+    await app.runMigrations();
+    expect(pool.query).toHaveBeenCalledWith('CREATE EXTENSION IF NOT EXISTS postgis');
+    expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE IF NOT EXISTS polygon_areas'));
+    expect(pool.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO polygon_areas'), expect.any(Array));
+  });
+});
