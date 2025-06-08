@@ -129,6 +129,7 @@ if (require.main === module) {
   const port = process.env.PORT || 3000;
   app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
+    console.log(`API docs available at http://localhost:${port}/api-docs`);
   });
 }
 
