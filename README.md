@@ -22,17 +22,30 @@ A SQL script is provided in `sql/create_polygon_areas.sql`:
 docker-compose exec db psql -U postgres -f /app/sql/create_polygon_areas.sql
 ```
 
-### API endpoint
+### API endpoints
 
-`POST /check-location`
+`POST /polygons` – create a new polygon area
 
-Body:
+Example body:
+
+```json
+{
+  "name": "Area 1",
+  "coordinates": [[10.0, 10.0], [10.0, 20.0], [20.0, 20.0], [10.0, 10.0]]
+}
+```
+
+`POST /check-location` – check whether a point is in any stored polygon
+
+Example body:
 
 ```json
 { "lat": 10.0, "lon": 20.0 }
 ```
 
 The endpoint returns `{ "inside": true, "polygonId": 1 }` when the point is inside a stored polygon or `{ "inside": false }` otherwise.
+
+Swagger UI is available at `http://localhost:3000/api-docs` when the server is running.
 
 ### Environment variables
 

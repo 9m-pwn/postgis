@@ -28,3 +28,18 @@ describe('POST /check-location', () => {
     expect(res.body).toEqual({ inside: false });
   });
 });
+
+describe('POST /polygons', () => {
+  test('inserts polygon and returns id', async () => {
+    const pool = {
+      query: jest.fn().mockResolvedValue({ rows: [{ id: 5 }] })
+    };
+    const app = createApp(pool);
+    const res = await request(app)
+      .post('/polygons')
+      .send({ name: 'test', coordinates: [[0,0],[1,0],[1,1]] });
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ id: 5 });
+    expect(pool.query).toHaveBeenCalled();
+  });
+});
