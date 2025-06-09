@@ -217,17 +217,54 @@ function createApp(pool, connectionString) {
          RETURNING id`,
         [name, lon, lat]
       );
-
-  //     ST_Buffer(
-  //   ST_SetSRID(ST_MakePoint(:'lon', :'lat'), 4326)::geography,
-  //   1000
-  // )::geometry
       
       res.status(201).json({ id: result.rows[0].id });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'server error' });
     }
+  });
+
+  // Middleware to check for authorization token
+function requireToken(req, res, next) {
+  const token = req.headers['authorization'];
+  if (!token) {
+    return res.status(401).json({ error: 'Authorization token required' });
+  }
+  // Optionally, validate the token here (e.g., JWT verification)
+  next();
+}
+
+  //  POST API for accept any incoming request and console log the request body
+  /** 
+  * @openapi
+  * /log-request:
+  *  post:
+  *   summary: Log incoming request body
+  *   security:
+  *     - bearerAuth: []
+  *  requestBody:
+  *  required: true
+  * content:
+  *  application/json:
+  *  schema:
+  *   type: object
+  *  properties:
+  *  requestBody:
+  *  type: object
+  * responses:
+  *  200:
+  * description: Request logged successfully
+  * */
+  app.post('/log-request', requireToken, (req, res) => {
+    console.log('Received request:', req.body);
+    // log access token
+    if (req.headers['authorization']) {
+      console.log('Authorization header:', req.headers['authorization']);
+    } else {
+      console.log('No authorization header provided');
+    }
+    res.status(200).json({ message: 'Request logged successfully' });
   });
 
 
